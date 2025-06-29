@@ -12,7 +12,9 @@ export interface User {
 
 export async function signIn(username: string, password: string) {
   try {
-    // Erst den Benutzer in unserer users Tabelle finden
+    // Debug: Benutzer in unserer users Tabelle finden
+    console.log("Searching for username:", username)
+
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("*")
@@ -20,22 +22,36 @@ export async function signIn(username: string, password: string) {
       .eq("is_active", true)
       .single()
 
+    console.log("User data found:", userData)
+    console.log("User error:", userError)
+
     if (userError || !userData) {
-      throw new Error("Benutzername oder Passwort ungültig")
+      throw new Error("Benutzername nicht gefunden")
     }
 
-    // Dann mit Supabase Auth anmelden (email als identifier)
+    // Mit der E-Mail aus der users Tabelle bei Supabase Auth anmelden
+    console.log("Attempting auth with email:", userData.email)
+
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: userData.email,
       password: password,
     })
 
+    console.log("Auth data:", authData)
+    console.log("Auth error:", authError)
+
     if (authError) {
-      throw new Error("Benutzername oder Passwort ungültig")
+      console.error("Auth error details:", authError)
+      throw new Error("Passwort ungültig")
+    }
+
+    if (!authData.session) {
+      throw new Error("Keine Session erstellt")
     }
 
     return { user: userData, session: authData.session }
   } catch (error) {
+    console.error("SignIn error:", error)
     throw error
   }
 }
