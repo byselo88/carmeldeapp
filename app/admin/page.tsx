@@ -22,8 +22,8 @@ export default function AdminPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   // Filter states
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([""])
-  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([""])
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
+  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([])
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
@@ -86,11 +86,11 @@ export default function AdminPage() {
       )
 
       // Filter anwenden
-      if (selectedUsers.length > 0 && selectedUsers[0] !== "") {
+      if (selectedUsers.length > 0) {
         query = query.in("user_id", selectedUsers)
       }
 
-      if (selectedVehicles.length > 0 && selectedVehicles[0] !== "") {
+      if (selectedVehicles.length > 0) {
         query = query.in("vehicle_id", selectedVehicles)
       }
 
@@ -195,14 +195,14 @@ export default function AdminPage() {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Fahrer</label>
                   <Select
-                    value={selectedUsers.join(",")}
-                    onValueChange={(value) => setSelectedUsers(value ? value.split(",") : [""])}
+                    value={selectedUsers.length === 0 ? "all" : selectedUsers.join(",")}
+                    onValueChange={(value) => setSelectedUsers(value === "all" ? [] : value.split(","))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Alle Fahrer" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle Fahrer</SelectItem>
+                      <SelectItem value="all">Alle Fahrer</SelectItem>
                       {users
                         .filter((u) => u.is_active)
                         .map((user) => (
@@ -217,14 +217,14 @@ export default function AdminPage() {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Fahrzeug</label>
                   <Select
-                    value={selectedVehicles.join(",")}
-                    onValueChange={(value) => setSelectedVehicles(value ? value.split(",") : [""])}
+                    value={selectedVehicles.length === 0 ? "all" : selectedVehicles.join(",")}
+                    onValueChange={(value) => setSelectedVehicles(value === "all" ? [] : value.split(","))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Alle Fahrzeuge" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Alle Fahrzeuge</SelectItem>
+                      <SelectItem value="all">Alle Fahrzeuge</SelectItem>
                       {vehicles.map((vehicle) => (
                         <SelectItem key={vehicle.id} value={vehicle.id}>
                           {vehicle.license_plate}
