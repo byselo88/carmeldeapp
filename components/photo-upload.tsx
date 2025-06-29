@@ -124,7 +124,9 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
 
       {/* Pflichtfotos */}
       <div className="space-y-3">
-        <h3 className="font-medium text-gray-900">Pflichtfotos</h3>
+        <h3 className="font-medium text-gray-900">
+          Pflichtfotos <span className="text-red-500">*</span>
+        </h3>
         <div className="grid grid-cols-2 gap-3">
           {requiredPhotos.map((photoType) => {
             const photo = getPhotoForType(photoType)
@@ -232,7 +234,11 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
         )}
       </div>
 
-      {isRequiredPhotoMissing() && <p className="text-sm text-red-600">Bitte fügen Sie alle Pflichtfotos hinzu.</p>}
+      {isRequiredPhotoMissing() && (
+        <p className="text-sm text-red-600">
+          Bitte fügen Sie alle Pflichtfotos hinzu. <span className="text-red-500">*</span>
+        </p>
+      )}
     </div>
   )
 }
