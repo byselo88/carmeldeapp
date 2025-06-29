@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [drivers, setDrivers] = useState<User[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [loading, setLoading] = useState(true)
+  const [searching, setSearching] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   // Filter states
@@ -40,15 +41,17 @@ export default function AdminPage() {
     loadData()
   }, [])
 
-  // Entferne diesen useEffect:
-  // useEffect(() => {
-  //   loadReports()
-  // }, [selectedDrivers, selectedVehicles, dateFrom, dateTo, currentPage])
+  // Automatische Suche beim Seitenwechsel
+  useEffect(() => {
+    if (!loading) {
+      handleSearch()
+    }
+  }, [currentPage])
 
-  // Füge stattdessen eine manuelle Suchfunktion hinzu:
-  const handleSearch = () => {
-    setCurrentPage(1)
-    loadReports()
+  const handleSearch = async () => {
+    setSearching(true)
+    await loadReports()
+    setSearching(false)
   }
 
   const loadData = async () => {
@@ -245,7 +248,7 @@ export default function AdminPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 {/* Fahrer Dropdown */}
                 <div className="relative">
                   <label className="text-sm font-medium mb-2 block">Fahrer</label>
@@ -326,11 +329,20 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Im Filter CardContent, nach den Datum-Feldern: */}
-              <div className="col-span-full">
-                <Button onClick={handleSearch} className="w-full md:w-auto">
-                  <Search className="h-4 w-4 mr-2" />
-                  Suchen
+              {/* Suchen Button */}
+              <div className="flex justify-center">
+                <Button onClick={handleSearch} disabled={searching} className="w-full md:w-auto">
+                  {searching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Wird gesucht...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Suchen
+                    </>
+                  )}
                 </Button>
               </div>
 
