@@ -9,40 +9,79 @@ import { AuthGuard } from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
 import { getCurrentUser } from "@/lib/simple-auth"
 import type { VehicleReport } from "@/lib/types"
-import { ArrowLeft, Calendar, Car, FileText, Loader2, Eye } from "lucide-react"
+import { ArrowLeft, Calendar, Car, FileText, Loader2, Eye, MoreHorizontal } from "lucide-react"
 
 export default function HistoriePage() {
   const [reports, setReports] = useState<VehicleReport[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState("")
+  const [hasMore, setHasMore] = useState(false)
+  const [offset, setOffset] = useState(0)
   const router = useRouter()
 
+  const ITEMS_PER_PAGE = 5
+
   useEffect(() => {
-    loadReports()
+    loadReports(true)
   }, [])
 
-  const loadReports = async () => {
+  const loadReports = async (reset = false) => {
     try {
       const user = await getCurrentUser()
       if (!user) return
 
-      const { data, error } = await supabase
+      const currentOffset = reset ? 0 : offset
+
+      if (reset) {
+        setLoading(true)
+        setReports([])
+        setOffset(0)
+      } else {
+        setLoadingMore(true)
+      }
+
+      const { data, error, count } = await supabase
         .from("vehicle_reports")
-        .select(`
-          *,
-          photos:report_photos(*)
-        `)
+        .select(
+          `
+        *,
+        photos:report_photos(id)
+      `,
+          { count: "exact" },
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(20)
+        .range(currentOffset, currentOffset + ITEMS_PER_PAGE - 1)
 
       if (error) throw error
-      setReports(data || [])
+
+      const newReports = data || []
+
+      if (reset) {
+        setReports(newReports)
+        setOffset(ITEMS_PER_PAGE)
+      } else {
+        setReports((prev) => [...prev, ...newReports])
+        setOffset((prev) => prev + ITEMS_PER_PAGE)
+      }
+
+      // Prüfen ob mehr Daten vorhanden sind
+      const totalCount = count || 0
+      const nextOffset = reset ? ITEMS_PER_PAGE : currentOffset + ITEMS_PER_PAGE
+      setHasMore(nextOffset < totalCount)
     } catch (err) {
       setError("Fehler beim Laden der Historie")
       console.error(err)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadReports(false)
     }
   }
 
@@ -100,7 +139,10 @@ export default function HistoriePage() {
             </Card>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">Ihre letzten {reports.length} Meldungen</p>
+              <p className="text-sm text-gray-600">
+                {reports.length} {reports.length === 1 ? "Meldung" : "Meldungen"}
+                {hasMore && " (weitere verfügbar)"}
+              </p>
 
               {reports.map((report) => (
                 <Card key={report.id}>
@@ -130,7 +172,7 @@ export default function HistoriePage() {
                       {report.notes && (
                         <div className="mt-3 p-2 bg-gray-50 rounded text-xs">
                           <span className="font-medium text-gray-700">Notizen:</span>
-                          <p className="mt-1 text-gray-600">{report.notes}</p>
+                          <p className="mt-1 text-gray-600 line-clamp-2">{report.notes}</p>
                         </div>
                       )}
 
@@ -149,6 +191,25 @@ export default function HistoriePage() {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="pt-4">
+                  <Button variant="outline" className="w-full bg-transparent" onClick={loadMore} disabled={loadingMore}>
+                    {loadingMore ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Wird geladen...
+                      </>
+                    ) : (
+                      <>
+                        <MoreHorizontal className="h-4 w-4 mr-2" />
+                        Weitere Einträge laden
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
