@@ -47,11 +47,18 @@ export interface CreateReportData {
 
 export interface User {
   id: string
-  email: string
   username: string
   first_name: string
   last_name: string
   role: "fahrer" | "admin"
   is_active: boolean
   created_at: string
+}
+
+export interface UserFavoriteVehicle {
+  id: string
+  user_id: string
+  vehicle_id: string
+  created_at: string
+  vehicle?: Vehicle
 }
