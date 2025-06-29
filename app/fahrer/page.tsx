@@ -30,6 +30,7 @@ export default function FahrerPage() {
   const [success, setSuccess] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [showVehicleDropdown, setShowVehicleDropdown] = useState(false)
+  const [showFavoritesManager, setShowFavoritesManager] = useState(false)
   const router = useRouter()
 
   const requiredPhotoTypes = ["vorne_links", "vorne_rechts", "hinten_links", "hinten_rechts"]
@@ -286,6 +287,9 @@ export default function FahrerPage() {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowFavoritesManager(true)}>
+                <Star className="h-4 w-4" />
+              </Button>
               <Button variant="outline" size="sm" onClick={() => router.push("/fahrer/historie")}>
                 <History className="h-4 w-4" />
               </Button>
@@ -377,10 +381,8 @@ export default function FahrerPage() {
                             </div>
                           </>
                         )}
-                        {sortedVehicles.map((vehicle) => {
+                        {vehicles.map((vehicle) => {
                           const isVehicleFavorite = isFavorite(vehicle.id)
-                          // Favoriten nicht doppelt anzeigen
-                          if (isVehicleFavorite && favoriteVehicles.length > 0) return null
 
                           return (
                             <button
@@ -392,30 +394,17 @@ export default function FahrerPage() {
                                 setShowVehicleDropdown(false)
                               }}
                             >
-                              <div>
-                                <div className="font-medium">{vehicle.license_plate}</div>
-                                {vehicle.brand && vehicle.model && (
-                                  <div className="text-sm text-gray-500">
-                                    {vehicle.brand} {vehicle.model}
-                                  </div>
-                                )}
+                              <div className="flex items-center gap-2">
+                                {isVehicleFavorite && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
+                                <div>
+                                  <div className="font-medium">{vehicle.license_plate}</div>
+                                  {vehicle.brand && vehicle.model && (
+                                    <div className="text-sm text-gray-500">
+                                      {vehicle.brand} {vehicle.model}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="p-1 h-auto"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  toggleFavorite(vehicle.id)
-                                }}
-                              >
-                                {isVehicleFavorite ? (
-                                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                                ) : (
-                                  <StarOff className="h-4 w-4 text-gray-400" />
-                                )}
-                              </Button>
                             </button>
                           )
                         })}
@@ -466,6 +455,70 @@ export default function FahrerPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Favoriten-Manager Modal */}
+        {showFavoritesManager && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-hidden">
+              <div className="p-4 border-b">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    Favoriten verwalten
+                  </h2>
+                  <Button variant="ghost" size="sm" onClick={() => setShowFavoritesManager(false)}>
+                    ✕
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Wählen Sie Ihre häufig genutzten Fahrzeuge als Favoriten aus
+                </p>
+              </div>
+
+              <div className="p-4 max-h-96 overflow-y-auto">
+                <div className="space-y-2">
+                  {vehicles.map((vehicle) => {
+                    const isVehicleFavorite = isFavorite(vehicle.id)
+                    return (
+                      <div
+                        key={vehicle.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      >
+                        <div>
+                          <div className="font-medium">{vehicle.license_plate}</div>
+                          {vehicle.brand && vehicle.model && (
+                            <div className="text-sm text-gray-500">
+                              {vehicle.brand} {vehicle.model}
+                            </div>
+                          )}
+                          {vehicle.konzession && (
+                            <div className="text-xs text-blue-600 font-medium">Konzession: {vehicle.konzession}</div>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => toggleFavorite(vehicle.id)} className="p-2">
+                          {isVehicleFavorite ? (
+                            <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                          ) : (
+                            <StarOff className="h-5 w-5 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="p-4 border-t bg-gray-50">
+                <div className="text-sm text-gray-600 mb-3">
+                  {favoriteVehicles.length} von {vehicles.length} Fahrzeugen als Favorit markiert
+                </div>
+                <Button onClick={() => setShowFavoritesManager(false)} className="w-full">
+                  Fertig
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Click outside to close dropdown */}
         {showVehicleDropdown && <div className="fixed inset-0 z-5" onClick={() => setShowVehicleDropdown(false)} />}
