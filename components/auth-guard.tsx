@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { getCurrentUser, type User } from "@/lib/auth"
+import { getCurrentUser, type User } from "@/lib/simple-auth"
 import { Loader2 } from "lucide-react"
 
 interface AuthGuardProps {
