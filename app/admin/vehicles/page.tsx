@@ -31,6 +31,7 @@ export default function VehiclesPage() {
   const [licensePlate, setLicensePlate] = useState("")
   const [brand, setBrand] = useState("")
   const [model, setModel] = useState("")
+  const [konzession, setKonzession] = useState("")
 
   const router = useRouter()
 
@@ -56,6 +57,7 @@ export default function VehiclesPage() {
     setLicensePlate("")
     setBrand("")
     setModel("")
+    setKonzession("")
     setError("")
     setSuccess("")
     setEditingVehicle(null)
@@ -87,6 +89,7 @@ export default function VehiclesPage() {
             license_plate: licensePlate.trim(),
             brand: brand.trim() || null,
             model: model.trim() || null,
+            konzession: konzession.trim() || null,
           })
           .eq("id", editingVehicle.id)
 
@@ -99,6 +102,7 @@ export default function VehiclesPage() {
           license_plate: licensePlate.trim(),
           brand: brand.trim() || null,
           model: model.trim() || null,
+          konzession: konzession.trim() || null,
           is_active: true,
         })
 
@@ -161,6 +165,7 @@ export default function VehiclesPage() {
     setLicensePlate(vehicle.license_plate)
     setBrand(vehicle.brand || "")
     setModel(vehicle.model || "")
+    setKonzession(vehicle.konzession || "")
     setShowEditDialog(true)
   }
 
@@ -239,6 +244,17 @@ export default function VehiclesPage() {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="konzession">Konzession (optional)</Label>
+                    <Input
+                      id="konzession"
+                      value={konzession}
+                      onChange={(e) => setKonzession(e.target.value)}
+                      disabled={submitting}
+                      placeholder="z.B. K001"
+                    />
+                  </div>
+
                   <div className="flex gap-2 pt-4">
                     <Button
                       type="button"
@@ -286,6 +302,7 @@ export default function VehiclesPage() {
                       <TableHead>Kennzeichen</TableHead>
                       <TableHead>Marke</TableHead>
                       <TableHead>Modell</TableHead>
+                      <TableHead>Konzession</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Erstellt</TableHead>
                       <TableHead>Aktionen</TableHead>
@@ -297,6 +314,9 @@ export default function VehiclesPage() {
                         <TableCell className="font-medium">{vehicle.license_plate}</TableCell>
                         <TableCell>{vehicle.brand || "-"}</TableCell>
                         <TableCell>{vehicle.model || "-"}</TableCell>
+                        <TableCell>
+                          {vehicle.konzession ? <Badge variant="outline">{vehicle.konzession}</Badge> : "-"}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={vehicle.is_active ? "default" : "destructive"}>
                             {vehicle.is_active ? "Aktiv" : "Inaktiv"}
@@ -368,6 +388,17 @@ export default function VehiclesPage() {
               <div className="space-y-2">
                 <Label htmlFor="editModel">Modell (optional)</Label>
                 <Input id="editModel" value={model} onChange={(e) => setModel(e.target.value)} disabled={submitting} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editKonzession">Konzession (optional)</Label>
+                <Input
+                  id="editKonzession"
+                  value={konzession}
+                  onChange={(e) => setKonzession(e.target.value)}
+                  disabled={submitting}
+                  placeholder="z.B. K001"
+                />
               </div>
 
               <div className="flex gap-2 pt-4">
