@@ -14,11 +14,12 @@ import { AuthGuard } from "@/components/auth-guard"
 import { PhotoUpload } from "@/components/photo-upload"
 import { supabase } from "@/lib/supabase"
 import { signOut, getCurrentUser } from "@/lib/simple-auth"
-import type { Vehicle } from "@/lib/types"
-import { Car, History, LogOut, Loader2, CheckCircle, ChevronDown } from "lucide-react"
+import type { Vehicle, UserFavoriteVehicle } from "@/lib/types"
+import { Car, History, LogOut, Loader2, CheckCircle, ChevronDown, Star, StarOff } from "lucide-react"
 
 export default function FahrerPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [favoriteVehicles, setFavoriteVehicles] = useState<UserFavoriteVehicle[]>([])
   const [selectedVehicle, setSelectedVehicle] = useState("")
   const [mileage, setMileage] = useState("")
   const [notes, setNotes] = useState("")
@@ -53,11 +54,65 @@ export default function FahrerPage() {
 
       if (vehiclesError) throw vehiclesError
       setVehicles(vehiclesData || [])
+
+      // Favoriten-Fahrzeuge laden
+      if (currentUser) {
+        const { data: favoritesData, error: favoritesError } = await supabase
+          .from("user_favorite_vehicles")
+          .select(`
+            *,
+            vehicle:vehicles(*)
+          `)
+          .eq("user_id", currentUser.id)
+
+        if (favoritesError) throw favoritesError
+        setFavoriteVehicles(favoritesData || [])
+      }
     } catch (err) {
       setError("Daten konnten nicht geladen werden")
       console.error(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const toggleFavorite = async (vehicleId: string) => {
+    if (!user) return
+
+    try {
+      const isFavorite = favoriteVehicles.some((fav) => fav.vehicle_id === vehicleId)
+
+      if (isFavorite) {
+        // Favorit entfernen
+        const { error } = await supabase
+          .from("user_favorite_vehicles")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("vehicle_id", vehicleId)
+
+        if (error) throw error
+
+        setFavoriteVehicles((prev) => prev.filter((fav) => fav.vehicle_id !== vehicleId))
+      } else {
+        // Favorit hinzufügen
+        const { data, error } = await supabase
+          .from("user_favorite_vehicles")
+          .insert({
+            user_id: user.id,
+            vehicle_id: vehicleId,
+          })
+          .select(`
+            *,
+            vehicle:vehicles(*)
+          `)
+          .single()
+
+        if (error) throw error
+
+        setFavoriteVehicles((prev) => [...prev, data])
+      }
+    } catch (err) {
+      console.error("Error toggling favorite:", err)
     }
   }
 
@@ -190,6 +245,20 @@ export default function FahrerPage() {
       : "Fahrzeug auswählen"
   }
 
+  const isFavorite = (vehicleId: string) => {
+    return favoriteVehicles.some((fav) => fav.vehicle_id === vehicleId)
+  }
+
+  // Fahrzeuge sortieren: Favoriten zuerst, dann alphabetisch
+  const sortedVehicles = [...vehicles].sort((a, b) => {
+    const aIsFavorite = isFavorite(a.id)
+    const bIsFavorite = isFavorite(b.id)
+
+    if (aIsFavorite && !bIsFavorite) return -1
+    if (!aIsFavorite && bIsFavorite) return 1
+    return a.license_plate.localeCompare(b.license_plate)
+  })
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -271,24 +340,85 @@ export default function FahrerPage() {
                   {showVehicleDropdown && (
                     <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
                       <div className="p-1">
-                        {vehicles.map((vehicle) => (
-                          <button
-                            key={vehicle.id}
-                            type="button"
-                            className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0"
-                            onClick={() => {
-                              setSelectedVehicle(vehicle.id)
-                              setShowVehicleDropdown(false)
-                            }}
-                          >
-                            <div className="font-medium">{vehicle.license_plate}</div>
-                            {vehicle.brand && vehicle.model && (
-                              <div className="text-sm text-gray-500">
-                                {vehicle.brand} {vehicle.model}
+                        {favoriteVehicles.length > 0 && (
+                          <>
+                            <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
+                              ⭐ Favoriten
+                            </div>
+                            {favoriteVehicles.map((favorite) => {
+                              const vehicle = favorite.vehicle
+                              if (!vehicle) return null
+                              return (
+                                <button
+                                  key={vehicle.id}
+                                  type="button"
+                                  className="w-full text-left p-3 hover:bg-gray-50 border-b flex items-center justify-between"
+                                  onClick={() => {
+                                    setSelectedVehicle(vehicle.id)
+                                    setShowVehicleDropdown(false)
+                                  }}
+                                >
+                                  <div>
+                                    <div className="font-medium flex items-center gap-2">
+                                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                      {vehicle.license_plate}
+                                    </div>
+                                    {vehicle.brand && vehicle.model && (
+                                      <div className="text-sm text-gray-500">
+                                        {vehicle.brand} {vehicle.model}
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                            <div className="px-3 py-2 text-xs font-medium text-gray-500 bg-gray-50 border-b">
+                              Alle Fahrzeuge
+                            </div>
+                          </>
+                        )}
+                        {sortedVehicles.map((vehicle) => {
+                          const isVehicleFavorite = isFavorite(vehicle.id)
+                          // Favoriten nicht doppelt anzeigen
+                          if (isVehicleFavorite && favoriteVehicles.length > 0) return null
+
+                          return (
+                            <button
+                              key={vehicle.id}
+                              type="button"
+                              className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0 flex items-center justify-between"
+                              onClick={() => {
+                                setSelectedVehicle(vehicle.id)
+                                setShowVehicleDropdown(false)
+                              }}
+                            >
+                              <div>
+                                <div className="font-medium">{vehicle.license_plate}</div>
+                                {vehicle.brand && vehicle.model && (
+                                  <div className="text-sm text-gray-500">
+                                    {vehicle.brand} {vehicle.model}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </button>
-                        ))}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toggleFavorite(vehicle.id)
+                                }}
+                              >
+                                {isVehicleFavorite ? (
+                                  <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                                ) : (
+                                  <StarOff className="h-4 w-4 text-gray-400" />
+                                )}
+                              </Button>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
