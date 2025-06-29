@@ -32,7 +32,6 @@ export default function UsersPage() {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [username, setUsername] = useState("")
-  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<"fahrer" | "admin">("fahrer")
 
@@ -60,7 +59,6 @@ export default function UsersPage() {
     setFirstName("")
     setLastName("")
     setUsername("")
-    setEmail("")
     setPassword("")
     setRole("fahrer")
     setError("")
@@ -79,10 +77,6 @@ export default function UsersPage() {
     }
     if (!username.trim()) {
       setError("Benutzername ist erforderlich")
-      return false
-    }
-    if (!email.trim() || !email.includes("@")) {
-      setError("Gültige E-Mail-Adresse ist erforderlich")
       return false
     }
     // Passwort nur bei neuen Benutzern erforderlich
@@ -109,7 +103,6 @@ export default function UsersPage() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           username: username.trim(),
-          email: email.trim(),
           role,
         }
 
@@ -126,7 +119,6 @@ export default function UsersPage() {
       } else {
         // Neuen Benutzer erstellen
         await createUser({
-          email: email.trim(),
           username: username.trim(),
           first_name: firstName.trim(),
           last_name: lastName.trim(),
@@ -183,7 +175,6 @@ export default function UsersPage() {
     setFirstName(user.first_name)
     setLastName(user.last_name)
     setUsername(user.username)
-    setEmail(user.email)
     setPassword("")
     setRole(user.role)
     setShowEditDialog(true)
@@ -260,18 +251,6 @@ export default function UsersPage() {
                       onChange={(e) => setUsername(e.target.value)}
                       disabled={submitting}
                       placeholder="z.B. fahrer2"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-Mail *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={submitting}
-                      placeholder="z.B. fahrer2@example.com"
                     />
                   </div>
 
@@ -362,7 +341,6 @@ export default function UsersPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Benutzername</TableHead>
-                      <TableHead>E-Mail</TableHead>
                       <TableHead>Rolle</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Erstellt</TableHead>
@@ -376,7 +354,6 @@ export default function UsersPage() {
                           {user.first_name} {user.last_name}
                         </TableCell>
                         <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                             {user.role === "admin" ? "Administrator" : "Fahrer"}
@@ -459,17 +436,6 @@ export default function UsersPage() {
                   id="editUsername"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  disabled={submitting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="editEmail">E-Mail *</Label>
-                <Input
-                  id="editEmail"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   disabled={submitting}
                 />
               </div>
