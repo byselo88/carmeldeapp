@@ -100,6 +100,15 @@ export default function FahrerPage() {
     })
   }
 
+  const resetForm = () => {
+    setSelectedVehicle("")
+    setMileage("")
+    setNotes("")
+    setPhotos([])
+    setError("")
+    setShowVehicleDropdown(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -153,16 +162,14 @@ export default function FahrerPage() {
         }
       }
 
+      // Erfolg anzeigen
       setSuccess(true)
 
-      // Form zurücksetzen
-      setSelectedVehicle("")
-      setMileage("")
-      setNotes("")
-      setPhotos([])
+      // Form sofort zurücksetzen
+      resetForm()
 
-      // Nach 3 Sekunden Success-Message ausblenden
-      setTimeout(() => setSuccess(false), 3000)
+      // Success-Message nach 5 Sekunden ausblenden
+      setTimeout(() => setSuccess(false), 5000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Fehler beim Speichern")
       console.error("Submit error:", err)
@@ -221,7 +228,12 @@ export default function FahrerPage() {
             <Alert className="mb-4 border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Fahrzeugmeldung wurde erfolgreich gespeichert!
+                <div className="space-y-1">
+                  <div className="font-semibold">✅ Meldung erfolgreich gespeichert!</div>
+                  <div className="text-sm">
+                    Ihre Fahrzeugmeldung wurde erfolgreich übermittelt und kann in der Historie eingesehen werden.
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
           )}
@@ -304,7 +316,7 @@ export default function FahrerPage() {
                   />
                 </div>
 
-                <PhotoUpload onPhotosChange={setPhotos} requiredPhotos={requiredPhotoTypes} />
+                <PhotoUpload onPhotosChange={setPhotos} requiredPhotos={requiredPhotoTypes} photos={photos} />
 
                 <Button type="submit" className="w-full h-12 text-base" disabled={submitting}>
                   {submitting ? (
