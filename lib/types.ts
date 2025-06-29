@@ -52,4 +52,5 @@ export interface User {
   last_name: string
   role: "fahrer" | "admin"
   is_active: boolean
+  created_at: string
 }
