@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AuthGuard } from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/simple-auth"
 import type { VehicleReport } from "@/lib/types"
-import { ArrowLeft, Calendar, Car, FileText, Loader2 } from "lucide-react"
+import { ArrowLeft, Calendar, Car, FileText, Loader2, Eye } from "lucide-react"
 
 export default function HistoriePage() {
   const [reports, setReports] = useState<VehicleReport[]>([])
@@ -34,7 +34,7 @@ export default function HistoriePage() {
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(5)
+        .limit(20)
 
       if (error) throw error
       setReports(data || [])
@@ -53,6 +53,10 @@ export default function HistoriePage() {
 
   const formatTime = (timeStr: string) => {
     return timeStr.substring(0, 5) + " Uhr"
+  }
+
+  const openReportDetails = (reportId: string) => {
+    router.push(`/fahrer/report/${reportId}`)
   }
 
   if (loading) {
@@ -129,6 +133,18 @@ export default function HistoriePage() {
                           <p className="mt-1 text-gray-600">{report.notes}</p>
                         </div>
                       )}
+
+                      <div className="mt-3 pt-3 border-t">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full bg-transparent"
+                          onClick={() => openReportDetails(report.id)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Details anzeigen
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
