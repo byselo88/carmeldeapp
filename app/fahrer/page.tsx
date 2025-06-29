@@ -434,7 +434,7 @@ export default function FahrerPage() {
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Besondere Vorkommnisse, Schäden, etc."
+                    placeholder="Hinweise, Schäden, etc."
                     className="min-h-[80px]"
                   />
                 </div>
