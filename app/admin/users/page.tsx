@@ -16,7 +16,7 @@ import { AuthGuard } from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
 import { createUser } from "@/lib/simple-auth"
 import type { User } from "@/lib/simple-auth"
-import { ArrowLeft, Plus, Users, Loader2, CheckCircle, XCircle } from "lucide-react"
+import { ArrowLeft, Plus, Users, Loader2, CheckCircle, XCircle, Edit, Trash2 } from "lucide-react"
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -25,6 +25,8 @@ export default function UsersPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
 
   // Form states
   const [firstName, setFirstName] = useState("")
@@ -63,6 +65,7 @@ export default function UsersPage() {
     setRole("fahrer")
     setError("")
     setSuccess("")
+    setEditingUser(null)
   }
 
   const validateForm = () => {
@@ -99,21 +102,45 @@ export default function UsersPage() {
     setSubmitting(true)
 
     try {
-      await createUser({
-        email: email.trim(),
-        username: username.trim(),
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        role,
-        password,
-      })
+      if (editingUser) {
+        // Benutzer bearbeiten
+        const updateData: any = {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          username: username.trim(),
+          email: email.trim(),
+          role,
+        }
 
-      setSuccess(`Benutzer "${username}" wurde erfolgreich erstellt`)
+        // Passwort nur aktualisieren wenn eingegeben
+        if (password.trim()) {
+          updateData.password_hash = password
+        }
+
+        const { error } = await supabase.from("users").update(updateData).eq("id", editingUser.id)
+
+        if (error) throw error
+        setSuccess(`Benutzer "${username}" wurde erfolgreich aktualisiert`)
+        setShowEditDialog(false)
+      } else {
+        // Neuen Benutzer erstellen
+        await createUser({
+          email: email.trim(),
+          username: username.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          role,
+          password,
+        })
+
+        setSuccess(`Benutzer "${username}" wurde erfolgreich erstellt`)
+        setShowAddDialog(false)
+      }
+
       resetForm()
-      setShowAddDialog(false)
       loadUsers()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Erstellen des Benutzers")
+      setError(err instanceof Error ? err.message : "Fehler beim Speichern des Benutzers")
     } finally {
       setSubmitting(false)
     }
@@ -130,6 +157,35 @@ export default function UsersPage() {
       setError("Fehler beim Ändern des Benutzerstatus")
       console.error(err)
     }
+  }
+
+  const deleteUser = async (userId: string, username: string) => {
+    if (!confirm(`Möchten Sie den Benutzer "${username}" wirklich löschen?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase.from("users").delete().eq("id", userId)
+
+      if (error) throw error
+
+      setUsers(users.filter((user) => user.id !== userId))
+      setSuccess(`Benutzer "${username}" wurde gelöscht`)
+    } catch (err) {
+      setError("Fehler beim Löschen des Benutzers")
+      console.error(err)
+    }
+  }
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user)
+    setFirstName(user.first_name)
+    setLastName(user.last_name)
+    setUsername(user.username)
+    setEmail(user.email)
+    setPassword("")
+    setRole(user.role)
+    setShowEditDialog(true)
   }
 
   if (loading) {
@@ -283,6 +339,126 @@ export default function UsersPage() {
                 </form>
               </DialogContent>
             </Dialog>
+            {/* Edit Dialog */}
+            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Benutzer bearbeiten</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Gleiche Form-Felder wie beim Add-Dialog */}
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editFirstName">Vorname *</Label>
+                      <Input
+                        id="editFirstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        disabled={submitting}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editLastName">Nachname *</Label>
+                      <Input
+                        id="editLastName"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        disabled={submitting}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="editUsername">Benutzername *</Label>
+                    <Input
+                      id="editUsername"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="editEmail">E-Mail *</Label>
+                    <Input
+                      id="editEmail"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={submitting}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="editPassword">Neues Passwort (leer lassen = nicht ändern)</Label>
+                    <Input
+                      id="editPassword"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={submitting}
+                      placeholder="Nur eingeben wenn ändern"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Rolle *</Label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="editRole"
+                          value="fahrer"
+                          checked={role === "fahrer"}
+                          onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
+                          disabled={submitting}
+                        />
+                        <span>Fahrer</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="editRole"
+                          value="admin"
+                          checked={role === "admin"}
+                          onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
+                          disabled={submitting}
+                        />
+                        <span>Administrator</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowEditDialog(false)}
+                      disabled={submitting}
+                      className="flex-1"
+                    >
+                      Abbrechen
+                    </Button>
+                    <Button type="submit" disabled={submitting} className="flex-1">
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Speichern...
+                        </>
+                      ) : (
+                        "Speichern"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -332,19 +508,26 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell>{new Date(user.created_at).toLocaleDateString("de-DE")}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm" onClick={() => toggleUserStatus(user.id, user.is_active)}>
-                            {user.is_active ? (
-                              <>
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Deaktivieren
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Aktivieren
-                              </>
-                            )}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openEditDialog(user)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleUserStatus(user.id, user.is_active)}
+                            >
+                              {user.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteUser(user.id, user.username)}
+                              disabled={user.role === "admin"} // Admins können nicht gelöscht werden
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
