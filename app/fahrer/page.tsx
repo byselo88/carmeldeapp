@@ -13,9 +13,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AuthGuard } from "@/components/auth-guard"
 import { PhotoUpload } from "@/components/photo-upload"
 import { supabase } from "@/lib/supabase"
-import { signOut, getCurrentUser } from "@/lib/auth"
+import { signOut, getCurrentUser } from "@/lib/simple-auth"
 import type { Vehicle } from "@/lib/types"
-import { Car, History, LogOut, Loader2, CheckCircle } from "lucide-react"
+import { Car, History, LogOut, Loader2, CheckCircle, ChevronDown } from "lucide-react"
 
 export default function FahrerPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -28,6 +28,7 @@ export default function FahrerPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false)
   const router = useRouter()
 
   const requiredPhotoTypes = ["vorne_links", "vorne_rechts", "hinten_links", "hinten_rechts"]
@@ -167,6 +168,14 @@ export default function FahrerPage() {
     }
   }
 
+  const getSelectedVehicleText = () => {
+    if (!selectedVehicle) return "Fahrzeug auswählen"
+    const vehicle = vehicles.find((v) => v.id === selectedVehicle)
+    return vehicle
+      ? `${vehicle.license_plate}${vehicle.brand && vehicle.model ? ` (${vehicle.brand} ${vehicle.model})` : ""}`
+      : "Fahrzeug auswählen"
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -226,34 +235,50 @@ export default function FahrerPage() {
                   </Alert>
                 )}
 
-                {/* Fahrzeug als Radio Buttons statt Select */}
-                <div className="space-y-2">
-                  <Label>Fahrzeug *</Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
-                    {vehicles.map((vehicle) => (
-                      <label key={vehicle.id} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="vehicle"
-                          value={vehicle.id}
-                          checked={selectedVehicle === vehicle.id}
-                          onChange={(e) => setSelectedVehicle(e.target.value)}
-                        />
-                        <span className="text-sm">
-                          {vehicle.license_plate}
-                          {vehicle.brand && vehicle.model && (
-                            <span className="text-gray-500 ml-2">
-                              ({vehicle.brand} {vehicle.model})
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
+                {/* Fahrzeug Dropdown */}
+                <div className="space-y-2 relative">
+                  <Label>
+                    Fahrzeug <span className="text-red-500">*</span>
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between h-12 bg-transparent"
+                    onClick={() => setShowVehicleDropdown(!showVehicleDropdown)}
+                  >
+                    {getSelectedVehicleText()}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                  {showVehicleDropdown && (
+                    <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      <div className="p-1">
+                        {vehicles.map((vehicle) => (
+                          <button
+                            key={vehicle.id}
+                            type="button"
+                            className="w-full text-left p-3 hover:bg-gray-50 border-b last:border-b-0"
+                            onClick={() => {
+                              setSelectedVehicle(vehicle.id)
+                              setShowVehicleDropdown(false)
+                            }}
+                          >
+                            <div className="font-medium">{vehicle.license_plate}</div>
+                            {vehicle.brand && vehicle.model && (
+                              <div className="text-sm text-gray-500">
+                                {vehicle.brand} {vehicle.model}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mileage">Kilometerstand *</Label>
+                  <Label htmlFor="mileage">
+                    Kilometerstand <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="mileage"
                     type="number"
@@ -292,6 +317,9 @@ export default function FahrerPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Click outside to close dropdown */}
+        {showVehicleDropdown && <div className="fixed inset-0 z-5" onClick={() => setShowVehicleDropdown(false)} />}
       </div>
     </AuthGuard>
   )
