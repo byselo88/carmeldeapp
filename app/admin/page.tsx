@@ -195,14 +195,14 @@ export default function AdminPage() {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Fahrer</label>
                   <Select
-                    value={selectedUsers.length === 0 ? "all" : selectedUsers.join(",")}
-                    onValueChange={(value) => setSelectedUsers(value === "all" ? [] : value.split(","))}
+                    value={selectedUsers.length === 0 ? "alle" : selectedUsers[0]}
+                    onValueChange={(value) => setSelectedUsers(value === "alle" ? [] : [value])}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Alle Fahrer" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Alle Fahrer</SelectItem>
+                      <SelectItem value="alle">Alle Fahrer</SelectItem>
                       {users
                         .filter((u) => u.is_active)
                         .map((user) => (
@@ -217,14 +217,14 @@ export default function AdminPage() {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Fahrzeug</label>
                   <Select
-                    value={selectedVehicles.length === 0 ? "all" : selectedVehicles.join(",")}
-                    onValueChange={(value) => setSelectedVehicles(value === "all" ? [] : value.split(","))}
+                    value={selectedVehicles.length === 0 ? "alle" : selectedVehicles[0]}
+                    onValueChange={(value) => setSelectedVehicles(value === "alle" ? [] : [value])}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Alle Fahrzeuge" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Alle Fahrzeuge</SelectItem>
+                      <SelectItem value="alle">Alle Fahrzeuge</SelectItem>
                       {vehicles.map((vehicle) => (
                         <SelectItem key={vehicle.id} value={vehicle.id}>
                           {vehicle.license_plate}
