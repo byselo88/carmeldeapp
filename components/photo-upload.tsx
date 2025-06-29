@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Camera, X, Upload } from "lucide-react"
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 interface PhotoUploadProps {
   onPhotosChange: (photos: { file: File; type: string; preview: string }[]) => void
   requiredPhotos: string[]
+  photos?: { file: File; type: string; preview: string }[]
   className?: string
 }
 
@@ -20,11 +21,16 @@ const PHOTO_TYPES = {
   optional: "Zusätzlich",
 }
 
-export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: PhotoUploadProps) {
-  const [photos, setPhotos] = useState<{ file: File; type: string; preview: string }[]>([])
+export function PhotoUpload({ onPhotosChange, requiredPhotos, photos = [], className }: PhotoUploadProps) {
+  const [localPhotos, setLocalPhotos] = useState<{ file: File; type: string; preview: string }[]>(photos)
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [currentPhotoType, setCurrentPhotoType] = useState<string>("")
+
+  // Sync with parent component
+  useEffect(() => {
+    setLocalPhotos(photos)
+  }, [photos])
 
   const handleFileSelect = (files: FileList | null, photoType: string) => {
     if (!files || files.length === 0) return
@@ -45,17 +51,17 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
 
     // Prüfen ob bereits ein Foto dieses Typs existiert (außer optional)
     if (photoType !== "optional") {
-      const existingIndex = photos.findIndex((p) => p.type === photoType)
+      const existingIndex = localPhotos.findIndex((p) => p.type === photoType)
       if (existingIndex !== -1) {
         // Ersetzen
-        const newPhotos = [...photos]
+        const newPhotos = [...localPhotos]
         URL.revokeObjectURL(newPhotos[existingIndex].preview)
         newPhotos[existingIndex] = {
           file,
           type: photoType,
           preview: URL.createObjectURL(file),
         }
-        setPhotos(newPhotos)
+        setLocalPhotos(newPhotos)
         onPhotosChange(newPhotos)
         return
       }
@@ -68,8 +74,8 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
       preview: URL.createObjectURL(file),
     }
 
-    const newPhotos = [...photos, newPhoto]
-    setPhotos(newPhotos)
+    const newPhotos = [...localPhotos, newPhoto]
+    setLocalPhotos(newPhotos)
     onPhotosChange(newPhotos)
 
     // Simulate upload progress
@@ -87,10 +93,10 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
   }
 
   const removePhoto = (index: number) => {
-    const newPhotos = [...photos]
+    const newPhotos = [...localPhotos]
     URL.revokeObjectURL(newPhotos[index].preview)
     newPhotos.splice(index, 1)
-    setPhotos(newPhotos)
+    setLocalPhotos(newPhotos)
     onPhotosChange(newPhotos)
   }
 
@@ -104,7 +110,7 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
   }
 
   const getPhotoForType = (type: string) => {
-    return photos.find((p) => p.type === type)
+    return localPhotos.find((p) => p.type === type)
   }
 
   const isRequiredPhotoMissing = () => {
@@ -147,7 +153,7 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
                         variant="destructive"
                         size="sm"
                         className="absolute top-1 right-1 h-6 w-6 p-0"
-                        onClick={() => removePhoto(photos.indexOf(photo))}
+                        onClick={() => removePhoto(localPhotos.indexOf(photo))}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -192,9 +198,9 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
           <span>Weiteres Foto hinzufügen</span>
         </Button>
 
-        {photos.filter((p) => p.type === "optional").length > 0 && (
+        {localPhotos.filter((p) => p.type === "optional").length > 0 && (
           <div className="grid grid-cols-2 gap-3">
-            {photos
+            {localPhotos
               .filter((p) => p.type === "optional")
               .map((photo, index) => {
                 const progress = uploadProgress[photo.file.name]
@@ -213,7 +219,7 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, className }: Photo
                           variant="destructive"
                           size="sm"
                           className="absolute top-1 right-1 h-6 w-6 p-0"
-                          onClick={() => removePhoto(photos.indexOf(photo))}
+                          onClick={() => removePhoto(localPhotos.indexOf(photo))}
                         >
                           <X className="h-3 w-3" />
                         </Button>
