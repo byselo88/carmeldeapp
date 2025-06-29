@@ -85,7 +85,8 @@ export default function UsersPage() {
       setError("Gültige E-Mail-Adresse ist erforderlich")
       return false
     }
-    if (!password.trim() || password.length < 3) {
+    // Passwort nur bei neuen Benutzern erforderlich
+    if (!editingUser && (!password.trim() || password.length < 3)) {
       setError("Passwort muss mindestens 3 Zeichen lang sein")
       return false
     }
