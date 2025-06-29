@@ -21,6 +21,7 @@ export default function ReportDetailsPage({ params }: ReportDetailsPageProps) {
   const [report, setReport] = useState<VehicleReport | null>(null)
   const [photos, setPhotos] = useState<ReportPhoto[]>([])
   const [loading, setLoading] = useState(true)
+  const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
 
@@ -77,6 +78,36 @@ export default function ReportDetailsPage({ params }: ReportDetailsPageProps) {
     }
   }
 
+  const downloadAllPhotos = async () => {
+    if (!report || photos.length === 0) return
+
+    setDownloading(true)
+
+    try {
+      // Timestamp für alle Downloads
+      const timestamp = new Date(report.created_at).toISOString().replace(/[:.]/g, "-").slice(0, 19)
+      const fahrerName = `${report.user?.first_name}_${report.user?.last_name}`.replace(/\s+/g, "_")
+      const kennzeichen = report.license_plate.replace(/[^a-zA-Z0-9]/g, "_")
+
+      // Alle Fotos parallel herunterladen
+      const downloadPromises = photos.map(async (photo, index) => {
+        const photoTypeLabel = getPhotoTypeLabel(photo.photo_type)
+        const filename = `${timestamp}_${kennzeichen}_${fahrerName}_${photoTypeLabel}.jpg`
+
+        // Kleine Verzögerung zwischen Downloads um Browser nicht zu überlasten
+        await new Promise((resolve) => setTimeout(resolve, index * 200))
+
+        return downloadPhoto(photo.photo_url, filename)
+      })
+
+      await Promise.all(downloadPromises)
+    } catch (err) {
+      console.error("Bulk download failed:", err)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("de-DE", {
       weekday: "long",
@@ -92,11 +123,11 @@ export default function ReportDetailsPage({ params }: ReportDetailsPageProps) {
 
   const getPhotoTypeLabel = (type: string) => {
     const labels = {
-      vorne_links: "Vorne Links",
-      vorne_rechts: "Vorne Rechts",
-      hinten_links: "Hinten Links",
-      hinten_rechts: "Hinten Rechts",
-      optional: "Zusätzlich",
+      vorne_links: "Vorne_Links",
+      vorne_rechts: "Vorne_Rechts",
+      hinten_links: "Hinten_Links",
+      hinten_rechts: "Hinten_Rechts",
+      optional: "Zusaetzlich",
     }
     return labels[type as keyof typeof labels] || type
   }
@@ -207,15 +238,20 @@ export default function ReportDetailsPage({ params }: ReportDetailsPageProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    photos.forEach((photo, index) => {
-                      const filename = `${report.license_plate}_${getPhotoTypeLabel(photo.photo_type)}_${index + 1}.jpg`
-                      downloadPhoto(photo.photo_url, filename)
-                    })
-                  }}
+                  onClick={downloadAllPhotos}
+                  disabled={downloading || photos.length === 0}
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Alle herunterladen
+                  {downloading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Wird heruntergeladen...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Alle herunterladen
+                    </>
+                  )}
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -228,13 +264,22 @@ export default function ReportDetailsPage({ params }: ReportDetailsPageProps) {
                     <div key={photo.id} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Badge variant={photo.is_required ? "default" : "secondary"}>
-                          {getPhotoTypeLabel(photo.photo_type)}
+                          {getPhotoTypeLabel(photo.photo_type).replace(/_/g, " ")}
                         </Badge>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const filename = `${report.license_plate}_${getPhotoTypeLabel(photo.photo_type)}.jpg`
+                            const timestamp = new Date(report.created_at)
+                              .toISOString()
+                              .replace(/[:.]/g, "-")
+                              .slice(0, 19)
+                            const fahrerName = `${report.user?.first_name}_${report.user?.last_name}`.replace(
+                              /\s+/g,
+                              "_",
+                            )
+                            const kennzeichen = report.license_plate.replace(/[^a-zA-Z0-9]/g, "_")
+                            const filename = `${timestamp}_${kennzeichen}_${fahrerName}_${getPhotoTypeLabel(photo.photo_type)}.jpg`
                             downloadPhoto(photo.photo_url, filename)
                           }}
                         >
@@ -264,7 +309,7 @@ export default function ReportDetailsPage({ params }: ReportDetailsPageProps) {
                             />
                             <div className="absolute top-4 left-4">
                               <Badge className="bg-black bg-opacity-75 text-white">
-                                {getPhotoTypeLabel(photo.photo_type)}
+                                {getPhotoTypeLabel(photo.photo_type).replace(/_/g, " ")}
                               </Badge>
                             </div>
                           </div>
