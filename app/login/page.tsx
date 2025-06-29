@@ -68,7 +68,7 @@ export default function LoginPage() {
                 required
                 disabled={loading}
                 className="h-12"
-                placeholder="z.B. admin oder fahrer1"
+                placeholder="Ihr Username"
               />
             </div>
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 <strong>Admin:</strong> admin / admin123
               </p>
               <p>
-                <strong>Fahrer:</strong> fahrer1 / fahrer123
+                <strong>Fahrer:</strong> fahrer / fahrer123
               </p>
             </div>
           </div>
