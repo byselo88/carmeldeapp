@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AuthGuard } from "@/components/auth-guard"
 import { PhotoUpload } from "@/components/photo-upload"
@@ -227,25 +226,30 @@ export default function FahrerPage() {
                   </Alert>
                 )}
 
+                {/* Fahrzeug als Radio Buttons statt Select */}
                 <div className="space-y-2">
-                  <Label htmlFor="vehicle">Fahrzeug *</Label>
-                  <Select value={selectedVehicle} onValueChange={setSelectedVehicle}>
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Fahrzeug auswählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {vehicles.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                  <Label>Fahrzeug *</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                    {vehicles.map((vehicle) => (
+                      <label key={vehicle.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="vehicle"
+                          value={vehicle.id}
+                          checked={selectedVehicle === vehicle.id}
+                          onChange={(e) => setSelectedVehicle(e.target.value)}
+                        />
+                        <span className="text-sm">
                           {vehicle.license_plate}
                           {vehicle.brand && vehicle.model && (
                             <span className="text-gray-500 ml-2">
                               ({vehicle.brand} {vehicle.model})
                             </span>
                           )}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
