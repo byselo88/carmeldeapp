@@ -18,17 +18,21 @@ export default function AdminPage() {
   const [reports, setReports] = useState<VehicleReport[]>([])
   const [drivers, setDrivers] = useState<User[]>([])
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [konzessions, setKonzessions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   // Filter states
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([])
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([])
+  const [selectedKonzessions, setSelectedKonzessions] = useState<string[]>([])
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [showDriverDropdown, setShowDriverDropdown] = useState(false)
   const [showVehicleDropdown, setShowVehicleDropdown] = useState(false)
+  const [showKonzessionDropdown, setShowKonzessionDropdown] = useState(false)
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -41,12 +45,12 @@ export default function AdminPage() {
     loadData()
   }, [])
 
-  // Automatische Suche beim Seitenwechsel
+  // Automatische Suche beim ersten Laden und bei Seitenwechsel
   useEffect(() => {
-    if (!loading) {
+    if (initialLoadComplete) {
       handleSearch()
     }
-  }, [currentPage])
+  }, [currentPage, initialLoadComplete])
 
   const handleSearch = async () => {
     setSearching(true)
@@ -80,10 +84,16 @@ export default function AdminPage() {
       if (vehiclesError) throw vehiclesError
       setVehicles(vehiclesData || [])
 
+      // Konzessionen extrahieren
+      const uniqueKonzessions = [...new Set(vehiclesData?.map((v) => v.konzession).filter(Boolean))] as string[]
+      setKonzessions(uniqueKonzessions.sort())
+
       // Standard: Heutiger Tag
       const today = new Date().toISOString().split("T")[0]
       setDateFrom(today)
       setDateTo(today)
+
+      setInitialLoadComplete(true)
     } catch (err) {
       console.error("Error loading data:", err)
     } finally {
@@ -117,6 +127,17 @@ export default function AdminPage() {
 
       if (selectedVehicles.length > 0) {
         query = query.in("vehicle_id", selectedVehicles)
+      }
+
+      // Konzessions-Filter
+      if (selectedKonzessions.length > 0) {
+        const vehicleIdsWithKonzession = vehicles
+          .filter((v) => selectedKonzessions.includes(v.konzession || ""))
+          .map((v) => v.id)
+
+        if (vehicleIdsWithKonzession.length > 0) {
+          query = query.in("vehicle_id", vehicleIdsWithKonzession)
+        }
       }
 
       // Paginierung
@@ -158,6 +179,7 @@ export default function AdminPage() {
   const resetFilters = () => {
     setSelectedDrivers([])
     setSelectedVehicles([])
+    setSelectedKonzessions([])
     const today = new Date().toISOString().split("T")[0]
     setDateFrom(today)
     setDateTo(today)
@@ -171,6 +193,12 @@ export default function AdminPage() {
   const toggleVehicle = (vehicleId: string) => {
     setSelectedVehicles((prev) =>
       prev.includes(vehicleId) ? prev.filter((id) => id !== vehicleId) : [...prev, vehicleId],
+    )
+  }
+
+  const toggleKonzession = (konzession: string) => {
+    setSelectedKonzessions((prev) =>
+      prev.includes(konzession) ? prev.filter((k) => k !== konzession) : [...prev, konzession],
     )
   }
 
@@ -190,6 +218,14 @@ export default function AdminPage() {
       return vehicle?.license_plate
     }
     return `${selectedVehicles.length} Fahrzeuge ausgewählt`
+  }
+
+  const getSelectedKonzessionsText = () => {
+    if (selectedKonzessions.length === 0) return "Alle Konzessionen"
+    if (selectedKonzessions.length === 1) {
+      return selectedKonzessions[0]
+    }
+    return `${selectedKonzessions.length} Konzessionen ausgewählt`
   }
 
   if (loading) {
@@ -248,7 +284,7 @@ export default function AdminPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
                 {/* Fahrer Dropdown */}
                 <div className="relative">
                   <label className="text-sm font-medium mb-2 block">Fahrer</label>
@@ -308,6 +344,40 @@ export default function AdminPage() {
                                   ({vehicle.brand} {vehicle.model})
                                 </span>
                               )}
+                              {vehicle.konzession && (
+                                <span className="text-blue-600 ml-2 font-medium">[{vehicle.konzession}]</span>
+                              )}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Konzessionen Dropdown */}
+                <div className="relative">
+                  <label className="text-sm font-medium mb-2 block">Konzessionen</label>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-transparent"
+                    onClick={() => setShowKonzessionDropdown(!showKonzessionDropdown)}
+                  >
+                    {getSelectedKonzessionsText()}
+                    <span className="ml-2">▼</span>
+                  </Button>
+                  {showKonzessionDropdown && (
+                    <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      <div className="p-2">
+                        {konzessions.map((konzession) => (
+                          <div key={konzession} className="flex items-center space-x-2 p-2 hover:bg-gray-50">
+                            <Checkbox
+                              id={`konzession-${konzession}`}
+                              checked={selectedKonzessions.includes(konzession)}
+                              onCheckedChange={() => toggleKonzession(konzession)}
+                            />
+                            <label htmlFor={`konzession-${konzession}`} className="text-sm cursor-pointer">
+                              {konzession}
                             </label>
                           </div>
                         ))}
@@ -352,6 +422,7 @@ export default function AdminPage() {
                 </span>
                 {selectedDrivers.length > 0 && <span>Fahrer: {selectedDrivers.length} ausgewählt</span>}
                 {selectedVehicles.length > 0 && <span>Fahrzeuge: {selectedVehicles.length} ausgewählt</span>}
+                {selectedKonzessions.length > 0 && <span>Konzessionen: {selectedKonzessions.length} ausgewählt</span>}
               </div>
             </CardContent>
           </Card>
@@ -368,6 +439,7 @@ export default function AdminPage() {
                     <TableRow>
                       <TableHead>Fahrer</TableHead>
                       <TableHead>Fahrzeug</TableHead>
+                      <TableHead>Konzession</TableHead>
                       <TableHead>Datum/Zeit</TableHead>
                       <TableHead>Kilometerstand</TableHead>
                       <TableHead>Fotos</TableHead>
@@ -377,35 +449,41 @@ export default function AdminPage() {
                   <TableBody>
                     {reports.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           Keine Meldungen im ausgewählten Zeitraum gefunden
                         </TableCell>
                       </TableRow>
                     ) : (
-                      reports.map((report) => (
-                        <TableRow key={report.id}>
-                          <TableCell>
-                            {report.user?.first_name} {report.user?.last_name}
-                          </TableCell>
-                          <TableCell className="font-medium">{report.license_plate}</TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <div>{formatDate(report.report_date)}</div>
-                              <div className="text-gray-500">{formatTime(report.report_time)}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{report.mileage.toLocaleString("de-DE")} km</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{report.photos?.length || 0}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" onClick={() => openReportDetails(report.id)}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      reports.map((report) => {
+                        const vehicle = vehicles.find((v) => v.id === report.vehicle_id)
+                        return (
+                          <TableRow key={report.id}>
+                            <TableCell>
+                              {report.user?.first_name} {report.user?.last_name}
+                            </TableCell>
+                            <TableCell className="font-medium">{report.license_plate}</TableCell>
+                            <TableCell>
+                              {vehicle?.konzession && <Badge variant="outline">{vehicle.konzession}</Badge>}
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{formatDate(report.report_date)}</div>
+                                <div className="text-gray-500">{formatTime(report.report_time)}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{report.mileage.toLocaleString("de-DE")} km</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{report.photos?.length || 0}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="outline" size="sm" onClick={() => openReportDetails(report.id)}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                Details
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -442,12 +520,13 @@ export default function AdminPage() {
         </div>
 
         {/* Click outside to close dropdowns */}
-        {(showDriverDropdown || showVehicleDropdown) && (
+        {(showDriverDropdown || showVehicleDropdown || showKonzessionDropdown) && (
           <div
             className="fixed inset-0 z-5"
             onClick={() => {
               setShowDriverDropdown(false)
               setShowVehicleDropdown(false)
+              setShowKonzessionDropdown(false)
             }}
           />
         )}
