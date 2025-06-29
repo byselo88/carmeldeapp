@@ -14,8 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AuthGuard } from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
-import { createUser } from "@/lib/auth"
-import type { User } from "@/lib/types"
+import { createUser } from "@/lib/simple-auth"
+import type { User } from "@/lib/simple-auth"
 import { ArrowLeft, Plus, Users, Loader2, CheckCircle, XCircle } from "lucide-react"
 
 export default function UsersPage() {
@@ -82,8 +82,8 @@ export default function UsersPage() {
       setError("Gültige E-Mail-Adresse ist erforderlich")
       return false
     }
-    if (!password.trim() || password.length < 6) {
-      setError("Passwort muss mindestens 6 Zeichen lang sein")
+    if (!password.trim() || password.length < 3) {
+      setError("Passwort muss mindestens 3 Zeichen lang sein")
       return false
     }
     return true
@@ -108,7 +108,7 @@ export default function UsersPage() {
         password,
       })
 
-      setSuccess("Benutzer wurde erfolgreich erstellt")
+      setSuccess(`Benutzer "${username}" wurde erfolgreich erstellt`)
       resetForm()
       setShowAddDialog(false)
       loadUsers()
@@ -202,6 +202,7 @@ export default function UsersPage() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       disabled={submitting}
+                      placeholder="z.B. fahrer2"
                     />
                   </div>
 
@@ -213,6 +214,7 @@ export default function UsersPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={submitting}
+                      placeholder="z.B. fahrer2@example.com"
                     />
                   </div>
 
@@ -224,11 +226,11 @@ export default function UsersPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={submitting}
-                      placeholder="Mindestens 6 Zeichen"
+                      placeholder="Mindestens 3 Zeichen"
                     />
                   </div>
 
-                  {/* Rolle als Radio Buttons statt Select */}
+                  {/* Rolle als Radio Buttons */}
                   <div className="space-y-2">
                     <Label>Rolle *</Label>
                     <div className="flex gap-4">
