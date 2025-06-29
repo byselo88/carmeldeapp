@@ -2,7 +2,6 @@ import { supabase } from "./supabase"
 
 export interface User {
   id: string
-  email: string
   username: string
   first_name: string
   last_name: string
@@ -81,7 +80,6 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function createUser(userData: {
-  email: string
   username: string
   first_name: string
   last_name: string
@@ -105,7 +103,6 @@ export async function createUser(userData: {
       .from("users")
       .insert({
         id: crypto.randomUUID(),
-        email: userData.email,
         username: userData.username,
         first_name: userData.first_name,
         last_name: userData.last_name,
