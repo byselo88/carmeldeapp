@@ -3,6 +3,7 @@ export interface Vehicle {
   license_plate: string
   brand?: string
   model?: string
+  konzession?: string
   is_active: boolean
   created_at: string
 }
