@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -229,17 +228,33 @@ export default function UsersPage() {
                     />
                   </div>
 
+                  {/* Rolle als Radio Buttons statt Select */}
                   <div className="space-y-2">
-                    <Label htmlFor="role">Rolle *</Label>
-                    <Select value={role} onValueChange={(value: "fahrer" | "admin") => setRole(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fahrer">Fahrer</SelectItem>
-                        <SelectItem value="admin">Administrator</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Rolle *</Label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="fahrer"
+                          checked={role === "fahrer"}
+                          onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
+                          disabled={submitting}
+                        />
+                        <span>Fahrer</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="role"
+                          value="admin"
+                          checked={role === "admin"}
+                          onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
+                          disabled={submitting}
+                        />
+                        <span>Administrator</span>
+                      </label>
+                    </div>
                   </div>
 
                   <div className="flex gap-2 pt-4">
