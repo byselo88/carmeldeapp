@@ -6,27 +6,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { AuthGuard } from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
 import { signOut, getCurrentUser } from "@/lib/auth"
 import type { VehicleReport, User } from "@/lib/types"
-import { Car, Users, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { Car, Users, LogOut, Search, Eye, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react"
 
 export default function AdminPage() {
   const [reports, setReports] = useState<VehicleReport[]>([])
-  const [users, setUsers] = useState<User[]>([])
-  const [vehicles, setVehicles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
 
-  // Filter states
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([])
-  const [selectedVehicles, setSelectedVehicles] = useState<string[]>([])
+  // Filter states (ohne Select-Komponenten)
+  const [searchTerm, setSearchTerm] = useState("")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
-  const [searchTerm, setSearchTerm] = useState("")
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1)
@@ -41,31 +36,17 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadReports()
-  }, [selectedUsers, selectedVehicles, dateFrom, dateTo, searchTerm, currentPage])
+  }, [searchTerm, dateFrom, dateTo, currentPage])
 
   const loadData = async () => {
     try {
       const user = await getCurrentUser()
       setCurrentUser(user)
 
-      // Benutzer laden
-      const { data: usersData } = await supabase.from("users").select("*").eq("role", "fahrer").order("first_name")
-
-      setUsers(usersData || [])
-
-      // Fahrzeuge laden
-      const { data: vehiclesData } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("is_active", true)
-        .order("license_plate")
-
-      setVehicles(vehiclesData || [])
-
-      // Standard: letzte 3 Tage
-      const threeDaysAgo = new Date()
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-      setDateFrom(threeDaysAgo.toISOString().split("T")[0])
+      // Standard: letzte 7 Tage
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      setDateFrom(sevenDaysAgo.toISOString().split("T")[0])
       setDateTo(new Date().toISOString().split("T")[0])
     } catch (err) {
       console.error("Error loading data:", err)
@@ -86,14 +67,6 @@ export default function AdminPage() {
       )
 
       // Filter anwenden
-      if (selectedUsers.length > 0) {
-        query = query.in("user_id", selectedUsers)
-      }
-
-      if (selectedVehicles.length > 0) {
-        query = query.in("vehicle_id", selectedVehicles)
-      }
-
       if (dateFrom) {
         query = query.gte("report_date", dateFrom)
       }
@@ -142,6 +115,15 @@ export default function AdminPage() {
     window.open(`/admin/report/${reportId}`, "_blank")
   }
 
+  const resetFilters = () => {
+    setSearchTerm("")
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    setDateFrom(sevenDaysAgo.toISOString().split("T")[0])
+    setDateTo(new Date().toISOString().split("T")[0])
+    setCurrentPage(1)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -182,58 +164,22 @@ export default function AdminPage() {
         </div>
 
         <div className="max-w-7xl mx-auto p-4">
-          {/* Filter */}
+          {/* Filter ohne Select-Komponenten */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filter
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Filter & Suche
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={resetFilters}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Zurücksetzen
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Fahrer</label>
-                  <Select
-                    value={selectedUsers.length === 0 ? "alle" : selectedUsers[0]}
-                    onValueChange={(value) => setSelectedUsers(value === "alle" ? [] : [value])}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Alle Fahrer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alle">Alle Fahrer</SelectItem>
-                      {users
-                        .filter((u) => u.is_active)
-                        .map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.first_name} {user.last_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Fahrzeug</label>
-                  <Select
-                    value={selectedVehicles.length === 0 ? "alle" : selectedVehicles[0]}
-                    onValueChange={(value) => setSelectedVehicles(value === "alle" ? [] : [value])}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Alle Fahrzeuge" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alle">Alle Fahrzeuge</SelectItem>
-                      {vehicles.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.license_plate}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Von Datum</label>
                   <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
@@ -243,18 +189,26 @@ export default function AdminPage() {
                   <label className="text-sm font-medium mb-2 block">Bis Datum</label>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
                 </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Suche</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Kennzeichen oder Notizen..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Suche nach Kennzeichen oder Notizen..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+              <div className="mt-4 flex items-center gap-4 text-sm text-gray-600">
+                <span>
+                  Zeitraum: {formatDate(dateFrom)} - {formatDate(dateTo)}
+                </span>
+                {searchTerm && <span>Suche: "{searchTerm}"</span>}
               </div>
             </CardContent>
           </Card>
@@ -279,39 +233,47 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>
-                          {report.user?.first_name} {report.user?.last_name}
-                        </TableCell>
-                        <TableCell className="font-medium">{report.license_plate}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>{formatDate(report.report_date)}</div>
-                            <div className="text-gray-500">{formatTime(report.report_time)}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{report.mileage.toLocaleString("de-DE")} km</TableCell>
-                        <TableCell>
-                          {report.notes ? (
-                            <div className="max-w-xs truncate" title={report.notes}>
-                              {report.notes}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{report.photos?.length || 0}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm" onClick={() => openReportDetails(report.id)}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            Details
-                          </Button>
+                    {reports.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          Keine Meldungen im ausgewählten Zeitraum gefunden
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      reports.map((report) => (
+                        <TableRow key={report.id}>
+                          <TableCell>
+                            {report.user?.first_name} {report.user?.last_name}
+                          </TableCell>
+                          <TableCell className="font-medium">{report.license_plate}</TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              <div>{formatDate(report.report_date)}</div>
+                              <div className="text-gray-500">{formatTime(report.report_time)}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{report.mileage.toLocaleString("de-DE")} km</TableCell>
+                          <TableCell>
+                            {report.notes ? (
+                              <div className="max-w-xs truncate" title={report.notes}>
+                                {report.notes}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{report.photos?.length || 0}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm" onClick={() => openReportDetails(report.id)}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
