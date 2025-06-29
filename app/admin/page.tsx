@@ -12,7 +12,7 @@ import { AuthGuard } from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
 import { signOut, getCurrentUser } from "@/lib/simple-auth"
 import type { VehicleReport, User, Vehicle } from "@/lib/types"
-import { Car, Users, LogOut, Eye, ChevronLeft, ChevronRight, Loader2, RefreshCw, Settings } from "lucide-react"
+import { Car, Users, LogOut, Eye, ChevronLeft, ChevronRight, Loader2, RefreshCw, Settings, Search } from "lucide-react"
 
 export default function AdminPage() {
   const [reports, setReports] = useState<VehicleReport[]>([])
@@ -40,9 +40,16 @@ export default function AdminPage() {
     loadData()
   }, [])
 
-  useEffect(() => {
+  // Entferne diesen useEffect:
+  // useEffect(() => {
+  //   loadReports()
+  // }, [selectedDrivers, selectedVehicles, dateFrom, dateTo, currentPage])
+
+  // Füge stattdessen eine manuelle Suchfunktion hinzu:
+  const handleSearch = () => {
+    setCurrentPage(1)
     loadReports()
-  }, [selectedDrivers, selectedVehicles, dateFrom, dateTo, currentPage])
+  }
 
   const loadData = async () => {
     try {
@@ -70,11 +77,10 @@ export default function AdminPage() {
       if (vehiclesError) throw vehiclesError
       setVehicles(vehiclesData || [])
 
-      // Standard: letzte 7 Tage
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      setDateFrom(sevenDaysAgo.toISOString().split("T")[0])
-      setDateTo(new Date().toISOString().split("T")[0])
+      // Standard: Heutiger Tag
+      const today = new Date().toISOString().split("T")[0]
+      setDateFrom(today)
+      setDateTo(today)
     } catch (err) {
       console.error("Error loading data:", err)
     } finally {
@@ -88,7 +94,7 @@ export default function AdminPage() {
         `
           *,
           user:users(first_name, last_name),
-          photos:report_photos(*)
+          photos:report_photos(id)
         `,
         { count: "exact" },
       )
@@ -149,10 +155,9 @@ export default function AdminPage() {
   const resetFilters = () => {
     setSelectedDrivers([])
     setSelectedVehicles([])
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    setDateFrom(sevenDaysAgo.toISOString().split("T")[0])
-    setDateTo(new Date().toISOString().split("T")[0])
+    const today = new Date().toISOString().split("T")[0]
+    setDateFrom(today)
+    setDateTo(today)
     setCurrentPage(1)
   }
 
@@ -319,6 +324,14 @@ export default function AdminPage() {
                   <label className="text-sm font-medium mb-2 block">Bis Datum</label>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
                 </div>
+              </div>
+
+              {/* Im Filter CardContent, nach den Datum-Feldern: */}
+              <div className="col-span-full">
+                <Button onClick={handleSearch} className="w-full md:w-auto">
+                  <Search className="h-4 w-4 mr-2" />
+                  Suchen
+                </Button>
               </div>
 
               <div className="mt-4 flex items-center gap-4 text-sm text-gray-600">
