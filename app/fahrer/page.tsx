@@ -141,7 +141,8 @@ export default function FahrerPage() {
       if (reportError) throw reportError
 
       // Fotos als Base64 speichern (temporäre Lösung)
-      for (const photo of photos) {
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i]
         try {
           const base64Data = await convertToBase64(photo.file)
 
@@ -162,17 +163,20 @@ export default function FahrerPage() {
         }
       }
 
-      // Erfolg anzeigen
+      // Erfolg anzeigen und sofort nach oben scrollen
+      window.scrollTo({ top: 0, behavior: "smooth" })
       setSuccess(true)
 
       // Form sofort zurücksetzen
       resetForm()
 
-      // Success-Message nach 5 Sekunden ausblenden
-      setTimeout(() => setSuccess(false), 5000)
+      // Success-Message nach 8 Sekunden ausblenden
+      setTimeout(() => setSuccess(false), 8000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Fehler beim Speichern")
       console.error("Submit error:", err)
+      // Bei Fehler auch nach oben scrollen
+      window.scrollTo({ top: 0, behavior: "smooth" })
     } finally {
       setSubmitting(false)
     }
