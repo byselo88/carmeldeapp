@@ -90,19 +90,14 @@ export default function FahrerPage() {
     return true
   }
 
-  const uploadPhoto = async (file: File, reportId: string, photoType: string): Promise<string> => {
-    const fileExt = file.name.split(".").pop()
-    const fileName = `${reportId}/${photoType}_${Date.now()}.${fileExt}`
-
-    const { data, error } = await supabase.storage.from("report-photos").upload(fileName, file)
-
-    if (error) throw error
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("report-photos").getPublicUrl(fileName)
-
-    return publicUrl
+  // Vereinfachter Upload - speichere Fotos als Base64 in der Datenbank
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = (error) => reject(error)
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,18 +131,26 @@ export default function FahrerPage() {
 
       if (reportError) throw reportError
 
-      // Fotos hochladen
+      // Fotos als Base64 speichern (temporäre Lösung)
       for (const photo of photos) {
-        const photoUrl = await uploadPhoto(photo.file, reportData.id, photo.type)
+        try {
+          const base64Data = await convertToBase64(photo.file)
 
-        const { error: photoError } = await supabase.from("report_photos").insert({
-          report_id: reportData.id,
-          photo_url: photoUrl,
-          photo_type: photo.type,
-          is_required: requiredPhotoTypes.includes(photo.type),
-        })
+          const { error: photoError } = await supabase.from("report_photos").insert({
+            report_id: reportData.id,
+            photo_url: base64Data, // Base64 statt Storage URL
+            photo_type: photo.type,
+            is_required: requiredPhotoTypes.includes(photo.type),
+          })
 
-        if (photoError) throw photoError
+          if (photoError) {
+            console.error("Photo insert error:", photoError)
+            throw photoError
+          }
+        } catch (photoErr) {
+          console.error("Photo processing error:", photoErr)
+          throw new Error(`Fehler beim Verarbeiten des Fotos: ${photo.type}`)
+        }
       }
 
       setSuccess(true)
@@ -162,7 +165,7 @@ export default function FahrerPage() {
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Fehler beim Speichern")
-      console.error(err)
+      console.error("Submit error:", err)
     } finally {
       setSubmitting(false)
     }
