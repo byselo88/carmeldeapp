@@ -340,126 +340,6 @@ export default function UsersPage() {
                 </form>
               </DialogContent>
             </Dialog>
-            {/* Edit Dialog */}
-            <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Benutzer bearbeiten</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Gleiche Form-Felder wie beim Add-Dialog */}
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="editFirstName">Vorname *</Label>
-                      <Input
-                        id="editFirstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        disabled={submitting}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="editLastName">Nachname *</Label>
-                      <Input
-                        id="editLastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        disabled={submitting}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="editUsername">Benutzername *</Label>
-                    <Input
-                      id="editUsername"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      disabled={submitting}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="editEmail">E-Mail *</Label>
-                    <Input
-                      id="editEmail"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={submitting}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="editPassword">Neues Passwort (leer lassen = nicht ändern)</Label>
-                    <Input
-                      id="editPassword"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={submitting}
-                      placeholder="Nur eingeben wenn ändern"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Rolle *</Label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="editRole"
-                          value="fahrer"
-                          checked={role === "fahrer"}
-                          onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
-                          disabled={submitting}
-                        />
-                        <span>Fahrer</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="editRole"
-                          value="admin"
-                          checked={role === "admin"}
-                          onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
-                          disabled={submitting}
-                        />
-                        <span>Administrator</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowEditDialog(false)}
-                      disabled={submitting}
-                      className="flex-1"
-                    >
-                      Abbrechen
-                    </Button>
-                    <Button type="submit" disabled={submitting} className="flex-1">
-                      {submitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Speichern...
-                        </>
-                      ) : (
-                        "Speichern"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
 
@@ -538,6 +418,126 @@ export default function UsersPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Benutzer bearbeiten</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editFirstName">Vorname *</Label>
+                  <Input
+                    id="editFirstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="editLastName">Nachname *</Label>
+                  <Input
+                    id="editLastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editUsername">Benutzername *</Label>
+                <Input
+                  id="editUsername"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editEmail">E-Mail *</Label>
+                <Input
+                  id="editEmail"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editPassword">Neues Passwort (leer lassen = nicht ändern)</Label>
+                <Input
+                  id="editPassword"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={submitting}
+                  placeholder="Nur eingeben wenn ändern"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Rolle *</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="editRole"
+                      value="fahrer"
+                      checked={role === "fahrer"}
+                      onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
+                      disabled={submitting}
+                    />
+                    <span>Fahrer</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="editRole"
+                      value="admin"
+                      checked={role === "admin"}
+                      onChange={(e) => setRole(e.target.value as "fahrer" | "admin")}
+                      disabled={submitting}
+                    />
+                    <span>Administrator</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowEditDialog(false)}
+                  disabled={submitting}
+                  className="flex-1"
+                >
+                  Abbrechen
+                </Button>
+                <Button type="submit" disabled={submitting} className="flex-1">
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Speichern...
+                    </>
+                  ) : (
+                    "Speichern"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </AuthGuard>
   )
