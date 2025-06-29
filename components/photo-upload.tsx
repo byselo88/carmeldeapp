@@ -49,6 +49,9 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, photos = [], class
       return
     }
 
+    // Eindeutige ID für diesen Upload generieren
+    const uploadId = `${photoType}_${Date.now()}`
+
     // Prüfen ob bereits ein Foto dieses Typs existiert (außer optional)
     if (photoType !== "optional") {
       const existingIndex = localPhotos.findIndex((p) => p.type === photoType)
@@ -63,6 +66,27 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, photos = [], class
         }
         setLocalPhotos(newPhotos)
         onPhotosChange(newPhotos)
+
+        // Upload-Progress nur für diese Datei
+        setUploadProgress((prev) => ({ ...prev, [uploadId]: 0 }))
+        const interval = setInterval(() => {
+          setUploadProgress((prev) => {
+            const current = prev[uploadId] || 0
+            if (current >= 100) {
+              clearInterval(interval)
+              // Progress nach Abschluss entfernen
+              setTimeout(() => {
+                setUploadProgress((p) => {
+                  const newProgress = { ...p }
+                  delete newProgress[uploadId]
+                  return newProgress
+                })
+              }, 500)
+              return { ...prev, [uploadId]: 100 }
+            }
+            return { ...prev, [uploadId]: current + 10 }
+          })
+        }, 100)
         return
       }
     }
@@ -78,18 +102,29 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, photos = [], class
     setLocalPhotos(newPhotos)
     onPhotosChange(newPhotos)
 
-    // Simulate upload progress
-    setUploadProgress((prev) => ({ ...prev, [file.name]: 0 }))
+    // Upload-Progress nur für diese Datei
+    setUploadProgress((prev) => ({ ...prev, [uploadId]: 0 }))
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
-        const current = prev[file.name] || 0
+        const current = prev[uploadId] || 0
         if (current >= 100) {
           clearInterval(interval)
-          return { ...prev, [file.name]: 100 }
+          // Progress nach Abschluss entfernen
+          setTimeout(() => {
+            setUploadProgress((p) => {
+              const newProgress = { ...p }
+              delete newProgress[uploadId]
+              return newProgress
+            })
+          }, 500)
+          return { ...prev, [uploadId]: 100 }
         }
-        return { ...prev, [file.name]: current + 10 }
+        return { ...prev, [uploadId]: current + 10 }
       })
     }, 100)
+
+    // File-Referenz für Progress-Tracking speichern
+    newPhoto.file.uploadId = uploadId
   }
 
   const removePhoto = (index: number) => {
@@ -136,7 +171,7 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, photos = [], class
         <div className="grid grid-cols-2 gap-3">
           {requiredPhotos.map((photoType) => {
             const photo = getPhotoForType(photoType)
-            const progress = photo ? uploadProgress[photo.file.name] : undefined
+            const progress = photo?.file?.uploadId ? uploadProgress[photo.file.uploadId] : undefined
 
             return (
               <Card key={photoType} className="relative">
@@ -203,7 +238,7 @@ export function PhotoUpload({ onPhotosChange, requiredPhotos, photos = [], class
             {localPhotos
               .filter((p) => p.type === "optional")
               .map((photo, index) => {
-                const progress = uploadProgress[photo.file.name]
+                const progress = photo.file?.uploadId ? uploadProgress[photo.file.uploadId] : undefined
 
                 return (
                   <Card key={`optional-${index}`} className="relative">
