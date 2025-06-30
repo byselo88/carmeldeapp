@@ -144,7 +144,11 @@ export default function AdminPage() {
       const from = (currentPage - 1) * itemsPerPage
       const to = from + itemsPerPage - 1
 
-      const { data, error, count } = await query.order("created_at", { ascending: false }).range(from, to)
+      const { data, error, count } = await query
+        .order("report_date", { ascending: false })
+        .order("report_time", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(from, to)
 
       if (error) throw error
 
@@ -276,7 +280,7 @@ export default function AdminPage() {
           <Card className="mb-6">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">Suchen</CardTitle>
+                <CardTitle className="flex items-center gap-2">Filter & Suche</CardTitle>
                 <Button variant="outline" size="sm" onClick={resetFilters}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Zurücksetzen
